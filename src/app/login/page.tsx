@@ -90,7 +90,7 @@ export default function LoginPage() {
 
   return (
     <main className="wd-light-scope relative z-[1] flex min-h-svh items-center justify-center px-4 py-8">
-      <div className="grid w-full max-w-[980px] overflow-hidden rounded-[28px] border border-[#fffdf6]/55 bg-[#f7eadd]/45 shadow-[0_30px_90px_rgb(35_21_14_/_28%)] backdrop-blur-2xl md:grid-cols-[1.02fr_.98fr]">
+      <div className="grid w-full max-w-[980px] overflow-hidden rounded-[28px] border border-[#fffdf6]/55 bg-[#f7eadd]/92 shadow-[0_30px_90px_rgb(35_21_14_/_32%)] backdrop-blur-2xl md:grid-cols-[1.02fr_.98fr]">
         <div
           className="relative hidden min-h-[560px] flex-col justify-between p-10 text-[#fff6e9] md:flex"
           style={{
@@ -129,7 +129,7 @@ export default function LoginPage() {
             </div>
             {otp ? (
               <>
-                <p className="mt-8 text-[11px] uppercase tracking-[0.16em] text-[#8d999f] md:mt-14">Verifikasi keamanan</p>
+                <p className="mt-8 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8d999f] md:mt-14">Verifikasi keamanan</p>
                 <h2 className="mt-2 text-[26px] font-extrabold tracking-[-0.04em]">Masukkan kode OTP</h2>
                 <p className="mt-2 text-xs leading-5 text-[#8d999f]">
                   Kode 6 angka dikirim ke <b className="text-[#4f6660]">{otp.email}</b>.
@@ -167,7 +167,7 @@ export default function LoginPage() {
               </>
             ) : (
               <>
-                <p className="mt-8 text-[11px] uppercase tracking-[0.16em] text-[#8d999f] md:mt-14">
+                <p className="mt-8 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8d999f] md:mt-14">
                   {mode === "login" ? "Selamat datang kembali" : "Mulai gunakan Wareflow"}
                 </p>
                 <h2 className="mt-2 text-[26px] font-extrabold tracking-[-0.04em]">
