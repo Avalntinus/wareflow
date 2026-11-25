@@ -2,9 +2,10 @@
 
 import {
   AlertTriangle,
-  BarChart3,
+  ArrowRight,
   Boxes,
   ChevronRight,
+  MapPin,
   PackagePlus,
   Plus,
   Sparkles,
@@ -30,168 +31,186 @@ export function DashboardView({
   onDelete: (product: Product) => void;
 }) {
   const firstName = summary.user.name.split(/\s+/)[0] || "Pengguna";
-  const attention = products.filter((product) => product.status !== "Aman").slice(0, 5);
-  const maxUnits = Math.max(1, ...summary.categories.slice(0, 5).map((category) => category.units));
-  const totalCategorized = summary.categories.reduce((sum, category) => sum + category.units, 0);
+  const attention = products.filter((product) => product.status !== "Aman").slice(0, 4);
+  const categories = summary.categories.slice(0, 6);
+  const maxUnits = Math.max(1, ...categories.map((category) => category.units));
+  const safeCount = products.filter((product) => product.status === "Aman").length;
+  const barTones = ["var(--wd-teal)", "var(--wd-coral)", "var(--wd-ochre)", "var(--wd-ink)", "var(--wd-teal)", "var(--wd-coral)"];
 
   return (
     <>
-      <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+      <div className="wd-view-head">
         <div>
-          <p className="mb-2 text-sm text-[#7e8993]">Selamat datang kembali, {firstName} 👋</p>
-          <h2 className="text-[27px] font-bold tracking-[-0.03em]">Pantau stok inventaris hari ini.</h2>
-          <p className="mt-2 text-sm text-[#89939c]">Berikut ringkasan kondisi stok Anda.</p>
+          <p>Selamat datang kembali, {firstName}</p>
+          <h1>Ringkasan</h1>
+          <p className="mt-2">Kondisi stok hari ini, diambil langsung dari catatan gudang Anda.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onAi}
-            className="flex h-11 items-center gap-2 rounded-xl border border-[#d5ebe6] bg-white px-4 text-xs font-semibold text-[#218678] hover:bg-[#f2faf8]"
-          >
-            <Sparkles size={16} /> Tanya Stok
+        <div className="wd-view-actions">
+          <button type="button" className="wd-secondary" onClick={onAi}>
+            <Sparkles /> Tanya Stok
           </button>
-          <button
-            type="button"
-            onClick={onAdd}
-            className="flex h-11 items-center gap-2 rounded-xl bg-[#1f8f80] px-4 text-xs font-semibold text-white shadow-sm hover:bg-[#197d70]"
-          >
-            <Plus size={17} /> Tambah barang
+          <button type="button" className="wd-primary" onClick={onAdd}>
+            <Plus /> Tambah barang
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        <KpiCard
-          label="Jenis barang aktif"
-          value={String(summary.productCount)}
-          helper={`${summary.categories.length} kategori terpakai`}
-          icon={<Boxes size={19} />}
-          tone="teal"
-        />
-        <KpiCard
-          label="Total unit stok"
-          value={formatNumber(summary.totalUnits)}
-          helper={`${summary.locationCount} lokasi terisi`}
-          icon={<PackagePlus size={19} />}
-          tone="blue"
-        />
-        <KpiCard
-          label="Nilai persediaan"
-          value={formatRupiah(summary.inventoryValue)}
-          helper="harga modal rata-rata"
-          icon={<BarChart3 size={19} />}
-          tone="purple"
-        />
-        <KpiCard
-          label="Perlu perhatian"
-          value={String(summary.lowStock)}
-          helper="menipis atau habis"
-          icon={<AlertTriangle size={19} />}
-          tone="amber"
-        />
-      </div>
-
-      <div className="mt-7 grid gap-5 xl:grid-cols-[1.55fr_1fr]">
-        <section className="rounded-2xl border border-[#e6e9ed] bg-white p-5 md:p-6">
-          <div className="mb-6 flex items-start justify-between">
-            <div>
-              <h3 className="text-sm font-bold">Stok berdasarkan kategori</h3>
-              <p className="mt-1 text-[11px] text-[#929ba3]">Jumlah unit di seluruh lokasi</p>
+      <div className="grid gap-3 xl:grid-cols-[1.02fr_1fr]">
+        <section className="wd-panel flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-[13px] font-bold">Nilai persediaan</h2>
+                <p className="mt-1 text-[11px] text-[#8b959d]">Harga modal rata-rata seluruh barang</p>
+              </div>
+              <span className="rounded-md bg-[#f8fafb] px-2 py-1 text-[10px] font-extrabold tracking-wide">IDR</span>
             </div>
-            <button
-              type="button"
-              onClick={() => onNavigate("barang")}
-              className="text-[11px] font-semibold text-[#1f8f80]"
-            >
+            <p className="mt-4 text-[clamp(30px,4vw,54px)] font-extrabold leading-none tracking-[-0.075em]">
+              {formatRupiah(summary.inventoryValue)}
+            </p>
+            <p className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-[#8b959d]">
+              <span className="inline-flex items-center gap-1 rounded-md bg-[#e8f6f3] px-1.5 py-1 font-bold text-[#2c8e7a]">
+                <PackagePlus size={11} /> {formatNumber(summary.totalUnits)} unit
+              </span>
+              tersimpan di {summary.locationCount} lokasi aktif
+            </p>
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button type="button" className="wd-primary" onClick={() => onNavigate("barang")}>
+              Lihat barang <ArrowRight />
+            </button>
+            <button type="button" className="wd-secondary" onClick={() => onNavigate("stock-count")}>
+              Stock Count
+            </button>
+          </div>
+
+          <div className="mt-4 flex rounded-xl bg-[#f8fafb] px-1 py-2">
+            {[
+              ["Kategori", String(summary.categories.length)],
+              ["Aman", String(safeCount)],
+              ["Lokasi", String(summary.locationCount)],
+            ].map(([label, value], index) => (
+              <div key={label} className={`min-w-0 flex-1 px-3 ${index > 0 ? "border-l border-[#eef0f2]" : ""}`}>
+                <span className="block text-[9px] text-[#8b959d]">{label}</span>
+                <strong className="mt-1 block text-[12px] font-extrabold">{value}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="grid grid-cols-2 gap-3">
+          <SummaryCard
+            label="Total unit stok"
+            value={formatNumber(summary.totalUnits)}
+            helper={`${summary.locationCount} lokasi terisi`}
+            icon={<PackagePlus />}
+            tone="teal"
+          />
+          <SummaryCard
+            label="Jenis barang"
+            value={String(summary.productCount)}
+            helper={`${summary.categories.length} kategori`}
+            icon={<Boxes />}
+          />
+          <SummaryCard
+            label="Lokasi aktif"
+            value={String(summary.locationCount)}
+            helper="rak dan gudang"
+            icon={<MapPin />}
+          />
+          <SummaryCard
+            label="Perlu perhatian"
+            value={String(summary.lowStock)}
+            helper="menipis atau habis"
+            icon={<AlertTriangle />}
+            tone="coral"
+          />
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-3 xl:grid-cols-[1.55fr_1fr]">
+        <section className="wd-panel">
+          <div className="wd-panel-head">
+            <div>
+              <h2>Stok per kategori</h2>
+              <p>Jumlah unit di seluruh lokasi</p>
+            </div>
+            <button type="button" onClick={() => onNavigate("barang")} className="text-[11px] font-bold text-[#20897b]">
               Lihat barang <ChevronRight className="inline" size={13} />
             </button>
           </div>
 
-          {summary.categories.length === 0 ? (
-            <p className="rounded-xl bg-[#f7f9fa] px-4 py-8 text-center text-xs text-[#8b959d]">
+          {categories.length === 0 ? (
+            <p className="rounded-xl bg-[#f8fafb] px-4 py-10 text-center text-xs text-[#8b959d]">
               Belum ada barang untuk ditampilkan.
             </p>
           ) : (
-            <div className="space-y-5">
-              {summary.categories.slice(0, 5).map((category, index) => {
-                const colors = ["#2a9d8f", "#5b8def", "#e7a54c", "#ab83d1", "#7aa6a0"];
-                const share = totalCategorized ? Math.round((category.units / totalCategorized) * 100) : 0;
-                return (
-                  <div key={category.name}>
-                    <div className="mb-2 flex justify-between text-xs">
-                      <span className="font-medium">{category.name}</span>
-                      <span className="text-[#8b959d]">
-                        {formatNumber(category.units)} unit · {share}%
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full bg-[#f0f2f3]">
+            <>
+              <div className="flex h-[168px] items-end gap-2 sm:gap-3">
+                {categories.map((category, index) => (
+                  <div key={category.name} className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
+                    <span className="text-[10px] font-bold text-[#8b959d] opacity-0 transition group-hover:opacity-100">
+                      {formatNumber(category.units)}
+                    </span>
+                    <div className="flex w-full flex-1 items-end">
                       <div
+                        className="w-full rounded-t-[6px] transition-[height] duration-500"
                         style={{
-                          width: `${Math.max(category.units > 0 ? 3 : 0, Math.round((category.units / maxUnits) * 100))}%`,
-                          backgroundColor: colors[index % colors.length],
+                          height: `${Math.max(category.units > 0 ? 4 : 2, Math.round((category.units / maxUnits) * 100))}%`,
+                          background: barTones[index % barTones.length],
+                          opacity: category.units > 0 ? 1 : 0.25,
                         }}
-                        className="h-full rounded-full"
+                        title={`${category.name}: ${formatNumber(category.units)} unit`}
                       />
                     </div>
+                    <span className="w-full truncate text-center text-[9px] text-[#8b959d]">{category.name}</span>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+              <div className="mt-4 flex items-center justify-between border-t border-[#eef0f2] pt-3">
+                <span className="flex items-center gap-2 text-[11px] text-[#8b959d]">
+                  <span className="h-2 w-2 rounded-full bg-[#2a9d8f]" /> {formatNumber(summary.totalUnits)} unit terdata
+                </span>
+                <span className="text-[11px] font-semibold text-[#8b959d]">{categories.length} kategori</span>
+              </div>
+            </>
           )}
-
-          <div className="mt-7 flex items-center justify-between border-t border-[#eef0f2] pt-5">
-            <div className="flex items-center gap-2 text-[11px] text-[#818c95]">
-              <span className="h-2 w-2 rounded-full bg-[#2a9d8f]" />
-              Total {formatNumber(summary.totalUnits)} unit terdata
-            </div>
-            <button
-              type="button"
-              onClick={() => onNavigate("stock-count")}
-              className="text-[11px] font-semibold text-[#1f8f80]"
-            >
-              Stock Count
-            </button>
-          </div>
         </section>
 
-        <section className="rounded-2xl border border-[#e6e9ed] bg-white p-5 md:p-6">
-          <div className="mb-5 flex items-start justify-between">
+        <section className="wd-panel">
+          <div className="wd-panel-head">
             <div>
-              <h3 className="text-sm font-bold">Perlu perhatian</h3>
-              <p className="mt-1 text-[11px] text-[#929ba3]">Segera periksa barang berikut</p>
+              <h2>Perlu perhatian</h2>
+              <p>Segera periksa barang berikut</p>
             </div>
-            <button
-              type="button"
-              aria-label="Buka barang perlu perhatian"
-              onClick={() => onNavigate("barang")}
-              className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f7f8f9] text-[#8b959d]"
-            >
-              <ChevronRight size={15} />
-            </button>
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f8fafb] text-[#8b959d]">
+              <AlertTriangle size={14} />
+            </span>
           </div>
 
           {attention.length === 0 ? (
-            <div className="rounded-xl border border-[#e4f1ed] bg-[#f4fbf9] px-4 py-8 text-center">
+            <div className="rounded-xl border border-[#cce8e1] bg-[#f4fbf9] px-4 py-8 text-center">
               <p className="text-xs font-semibold text-[#2b806f]">Semua stok dalam kondisi aman.</p>
               <p className="mt-1 text-[11px] text-[#7a9a93]">Tidak ada barang menipis atau habis.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {attention.map((product) => (
-                <div key={product.id} className="flex items-center gap-3 rounded-xl border border-[#f0f1f2] p-3">
+                <div key={product.id} className="flex items-center gap-3 rounded-xl border border-[#eef0f2] bg-[#f8fafb] p-3">
                   <div
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
                       product.status === "Habis" ? "bg-[#fff0ee] text-[#df7566]" : "bg-[#fff5e3] text-[#d99532]"
                     }`}
                   >
-                    <AlertTriangle size={16} />
+                    <AlertTriangle size={15} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-semibold">{product.name}</p>
-                    <p className="mt-1 text-[10px] text-[#929ba3]">
+                    <p className="mt-1 truncate text-[10px] text-[#8b959d]">
                       {product.locations.filter((location) => location.quantity > 0).map((location) => location.name).join(", ") ||
                         "Belum ditempatkan"}{" "}
-                      · stok {product.stock} {product.unit}
+                      · {product.stock} {product.unit}
                     </p>
                   </div>
                   <span
@@ -209,29 +228,25 @@ export function DashboardView({
           <button
             type="button"
             onClick={() => onNavigate("barang")}
-            className="mt-5 w-full rounded-xl border border-[#e4e8ea] py-2.5 text-[11px] font-semibold text-[#69757e] hover:bg-[#f8fafb]"
+            className="mt-3 w-full rounded-xl border border-[#e4e8ea] py-2.5 text-[11px] font-semibold text-[#69757e] hover:bg-[#f8fafb]"
           >
             Lihat semua perhatian
           </button>
         </section>
       </div>
 
-      <section className="mt-5 rounded-2xl border border-[#e6e9ed] bg-white p-5 md:p-6">
-        <div className="mb-5 flex items-center justify-between">
+      <section className="wd-panel mt-3">
+        <div className="wd-panel-head">
           <div>
-            <h3 className="text-sm font-bold">Barang terbaru</h3>
-            <p className="mt-1 text-[11px] text-[#929ba3]">Barang yang terakhir ditambahkan atau diperbarui</p>
+            <h2>Barang terbaru</h2>
+            <p>Barang yang terakhir ditambahkan atau diperbarui</p>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigate("barang")}
-            className="text-[11px] font-semibold text-[#1f8f80]"
-          >
+          <button type="button" onClick={() => onNavigate("barang")} className="text-[11px] font-bold text-[#20897b]">
             Lihat semua <ChevronRight className="inline" size={13} />
           </button>
         </div>
         {products.length === 0 ? (
-          <p className="rounded-xl bg-[#f7f9fa] px-4 py-8 text-center text-xs text-[#8b959d]">
+          <p className="rounded-xl bg-[#f8fafb] px-4 py-10 text-center text-xs text-[#8b959d]">
             Belum ada barang. Tambahkan barang pertama untuk mulai memantau stok.
           </p>
         ) : (
@@ -242,7 +257,7 @@ export function DashboardView({
   );
 }
 
-function KpiCard({
+function SummaryCard({
   label,
   value,
   helper,
@@ -253,24 +268,43 @@ function KpiCard({
   value: string;
   helper: string;
   icon: React.ReactNode;
-  tone: "teal" | "blue" | "purple" | "amber";
+  tone?: "teal" | "coral";
 }) {
-  const tones: Record<string, string> = {
-    teal: "bg-[#e8f6f3] text-[#218678]",
-    blue: "bg-[#edf3ff] text-[#5b83d4]",
-    purple: "bg-[#f3effb] text-[#946fc3]",
-    amber: "bg-[#fff5e3] text-[#d29432]",
-  };
+  const surface =
+    tone === "teal"
+      ? {
+          background: "radial-gradient(ellipse at 5% -20%, #3a9381, transparent 68%), linear-gradient(145deg, #1e7461, #08443a)",
+          borderColor: "rgb(196 248 231 / 55%)",
+          color: "#fff",
+        }
+      : tone === "coral"
+        ? {
+            background: "color-mix(in srgb, var(--wd-coral) 14%, var(--wd-surface))",
+            borderColor: "color-mix(in srgb, var(--wd-coral) 38%, transparent)",
+            color: "var(--wd-coral)",
+          }
+        : { background: "var(--wd-card)", color: "var(--wd-ink)" };
+
   return (
-    <div className="rounded-2xl border border-[#e6e9ed] bg-white p-4 sm:p-5">
-      <div className="flex items-start justify-between">
-        <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${tones[tone]}`}>{icon}</div>
+    <article
+      className="flex min-h-[118px] flex-col justify-between rounded-2xl border border-[#e6e9ed] p-3.5"
+      style={surface}
+    >
+      <div className="flex items-center justify-between gap-2 text-[11px] font-bold">
+        <span>{label}</span>
+        <span
+          className="grid h-7 w-7 place-items-center rounded-[10px]"
+          style={{ background: tone === "teal" ? "rgb(235 255 247 / 16%)" : "var(--wd-inner)" }}
+        >
+          {icon}
+        </span>
       </div>
-      <p className="mt-4 text-[11px] text-[#89939c] sm:mt-5">{label}</p>
-      <p className="mt-1 truncate text-[18px] font-bold tracking-tight sm:text-[23px]" title={value}>
-        {value}
-      </p>
-      <p className="mt-1 flex items-center gap-1 text-[10px] leading-4 text-[#a0a8ae]">{helper}</p>
-    </div>
+      <div>
+        <strong className="block text-[clamp(20px,2.1vw,31px)] font-extrabold leading-none tracking-[-0.05em]">{value}</strong>
+        <span className={`mt-2 block text-[10px] font-semibold ${tone === "teal" ? "text-white/70" : "text-[#8b959d]"}`}>
+          {helper}
+        </span>
+      </div>
+    </article>
   );
 }

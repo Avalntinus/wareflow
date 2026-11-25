@@ -1,20 +1,22 @@
 "use client";
 
 import {
-  BarChart3,
   Bell,
   Boxes,
   Camera,
   ChevronDown,
   CircleHelp,
+  ClipboardCheck,
   FileSpreadsheet,
   LayoutDashboard,
   LogOut,
   Menu,
+  Moon,
   PackagePlus,
   Search,
   Settings,
   Sparkles,
+  Sun,
   Warehouse,
   X,
 } from "lucide-react";
@@ -26,7 +28,6 @@ import {
   Location,
   Product,
   PurchaseRecord,
-  formatDate,
   formatLongDate,
   initials,
   mapProduct,
@@ -55,20 +56,22 @@ type PageKey =
   | "pengaturan"
   | "bantuan";
 
-const mainNav: { key: PageKey; label: string; icon: typeof LayoutDashboard }[] = [
-  { key: "ringkasan", label: "Ringkasan", icon: LayoutDashboard },
-  { key: "barang", label: "Barang", icon: Boxes },
-  { key: "pembelian", label: "Pembelian", icon: PackagePlus },
-  { key: "lokasi", label: "Lokasi", icon: Warehouse },
-  { key: "import", label: "Import data", icon: FileSpreadsheet },
-  { key: "stock-count", label: "Stock Count", icon: BarChart3 },
-  { key: "scan-nota", label: "Scan Nota", icon: Camera },
+const mainNav: { key: PageKey; label: string; short: string; icon: typeof LayoutDashboard }[] = [
+  { key: "ringkasan", label: "Ringkasan", short: "Ringkasan", icon: LayoutDashboard },
+  { key: "barang", label: "Barang", short: "Barang", icon: Boxes },
+  { key: "pembelian", label: "Pembelian", short: "Beli", icon: PackagePlus },
+  { key: "lokasi", label: "Lokasi", short: "Lokasi", icon: Warehouse },
+  { key: "import", label: "Import data", short: "Import", icon: FileSpreadsheet },
+  { key: "stock-count", label: "Stock Count", short: "Hitung", icon: ClipboardCheck },
+  { key: "scan-nota", label: "Scan Nota", short: "Scan", icon: Camera },
 ];
 
-const otherNav: { key: PageKey; label: string; icon: typeof Settings }[] = [
-  { key: "pengaturan", label: "Pengaturan", icon: Settings },
-  { key: "bantuan", label: "Bantuan", icon: CircleHelp },
+const otherNav: { key: PageKey; label: string; short: string; icon: typeof Settings }[] = [
+  { key: "pengaturan", label: "Pengaturan", short: "Akun", icon: Settings },
+  { key: "bantuan", label: "Bantuan", short: "Bantuan", icon: CircleHelp },
 ];
+
+const mobileDock: PageKey[] = ["ringkasan", "barang", "pembelian", "lokasi"];
 
 const titles: Record<PageKey, string> = {
   ringkasan: "Ringkasan",
@@ -95,9 +98,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [query, setQuery] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [mobileSearch, setMobileSearch] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [showAdd, setShowAdd] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showAi, setShowAi] = useState(false);
@@ -181,7 +185,13 @@ export default function Home() {
     const now = new Date();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTodayLabel(formatLongDate(now));
-    setTodayShort(formatDate(now));
+    setTodayShort(new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(now));
+  }, []);
+
+  useEffect(() => {
+    // Theme is applied before paint by the inline script in layout.tsx.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (document.documentElement.dataset.theme === "dark") setTheme("dark");
   }, []);
 
   useEffect(() => {
@@ -189,6 +199,11 @@ export default function Home() {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         searchRef.current?.focus();
+      }
+      if (event.key === "Escape") {
+        setNotifOpen(false);
+        setUserOpen(false);
+        setMobileMenu(false);
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -207,6 +222,25 @@ export default function Home() {
   }, [products, query]);
 
   const lowStockProducts = useMemo(() => products.filter((product) => product.status !== "Aman"), [products]);
+
+  function toggleTheme() {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    document.documentElement.dataset.theme = next;
+    try {
+      localStorage.setItem("wd-theme", next);
+    } catch {
+      /* theme stays for this session */
+    }
+  }
+
+  function navigate(page: PageKey) {
+    setActive(page);
+    setMobileMenu(false);
+    setNotifOpen(false);
+    setUserOpen(false);
+    if (page !== "barang") setQuery("");
+  }
 
   function openProductsForLocation(location: Location) {
     setQuery(location.name);
@@ -266,7 +300,7 @@ export default function Home() {
           products={products}
           onAdd={() => setShowAdd(true)}
           onAi={() => setShowAi(true)}
-          onNavigate={setActive}
+          onNavigate={navigate}
           onEdit={setEditingProduct}
           onDelete={deleteProduct}
         />
@@ -343,207 +377,126 @@ export default function Home() {
       );
     }
 
-    if (active === "bantuan") return <HelpView onNavigate={setActive} />;
+    if (active === "bantuan") return <HelpView onNavigate={(page) => navigate(page)} />;
 
     return <DashboardSkeleton />;
   }
 
   const displayName = account?.name ?? summary?.user.name ?? "Pengguna";
-  const branchLabel = account?.role === "OWNER" ? "Pemilik" : "Akun terverifikasi";
+  const roleLabel = account?.role === "OWNER" ? "Pemilik" : "Akun terverifikasi";
+
+  function DockButton({
+    page,
+    label,
+    icon: Icon,
+  }: {
+    page: PageKey;
+    label: string;
+    icon: typeof LayoutDashboard;
+  }) {
+    return (
+      <button
+        type="button"
+        onClick={() => navigate(page)}
+        aria-label={label}
+        aria-current={active === page ? "page" : undefined}
+      >
+        <Icon />
+        <span className="wd-dock-label">{label.length > 9 ? label.split(" ")[0] : label}</span>
+        <span className="wd-dock-tip" aria-hidden="true">{label}</span>
+      </button>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#f7f8fa] text-[#17202a]">
-      {sidebarOpen && (
-        <button
-          type="button"
-          aria-label="Tutup menu"
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-[#061719]/45 backdrop-blur-md lg:hidden"
-        />
-      )}
-
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[min(84vw,300px)] flex-col border-r border-[#e6e9ed] bg-white px-5 py-6 transition-transform duration-300 ease-out lg:w-[260px] lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between px-2">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1f8f80] text-lg font-bold text-white">WF</div>
+    <div className="wd-shell">
+      <div className="wd-surround">
+        <header className="wd-top">
+          <div className="wd-brand">
+            <span className="wd-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3.4 6.2 7 17.8l5-7.6 5 7.6 3.6-11.6" />
+              </svg>
+            </span>
             <div>
-              <p className="truncate text-[17px] font-bold tracking-tight">
-                Ware<span className="text-[#1f8f80]">flow</span>
-              </p>
-              <p className="truncate text-[11px] text-[#8b949e]">Manajemen Inventaris</p>
+              <strong>Wareflow</strong>
+              <small>{todayLabel || todayShort || "Manajemen inventaris"}</small>
             </div>
           </div>
-          <button type="button" onClick={() => setSidebarOpen(false)} aria-label="Tutup sidebar" className="lg:hidden">
-            <X size={18} />
-          </button>
-        </div>
 
-        <div className="mt-8">
-          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#a2aab2]">Menu utama</p>
-          <nav className="space-y-1">
-            {mainNav.map((item) => {
-              const Icon = item.icon;
-              const selected = active === item.key;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => {
-                    setActive(item.key);
-                    setSidebarOpen(false);
-                    if (item.key !== "barang") setQuery("");
-                  }}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium transition ${
-                    selected ? "bg-[#e9f6f3] text-[#197d70]" : "text-[#65717d] hover:bg-[#f5f7f8]"
-                  }`}
-                >
-                  <Icon size={18} strokeWidth={selected ? 2.4 : 1.8} />
-                  {item.label}
-                  {item.key === "barang" && (
-                    <span className="ml-auto rounded-full bg-[#f0f2f4] px-2 py-0.5 text-[10px] text-[#7b858d]">
-                      {products.length}
-                    </span>
-                  )}
-                  {item.key === "scan-nota" && (
-                    <span className="ml-auto rounded-md bg-[#eef3ff] px-1.5 py-0.5 text-[9px] font-bold text-[#5b83d4]">AI</span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="mt-7">
-          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#a2aab2]">Lainnya</p>
-          <nav className="space-y-1">
-            <button
-              type="button"
-              onClick={() => {
-                setShowAi(true);
-                setSidebarOpen(false);
+          <div className="wd-ask">
+            <Search aria-hidden="true" />
+            <input
+              ref={searchRef}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                if (event.target.value && active !== "barang") setActive("barang");
               }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium text-[#65717d] hover:bg-[#f5f7f8]"
-            >
-              <Sparkles size={18} strokeWidth={1.8} /> Tanya Stok
-              <span className="ml-auto rounded-md bg-[#fff4df] px-1.5 py-0.5 text-[9px] font-bold text-[#bd7b18]">AI</span>
-            </button>
-            {otherNav.map((item) => {
-              const Icon = item.icon;
-              const selected = active === item.key;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => {
-                    setActive(item.key);
-                    setSidebarOpen(false);
-                    setQuery("");
-                  }}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium transition ${
-                    selected ? "bg-[#e9f6f3] text-[#197d70]" : "text-[#65717d] hover:bg-[#f5f7f8]"
-                  }`}
-                >
-                  <Icon size={18} strokeWidth={selected ? 2.4 : 1.8} /> {item.label}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="mt-auto rounded-2xl bg-[#f2faf8] p-4">
-          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-[#d7f0eb] text-[#168272]">
-            <Sparkles size={16} />
-          </div>
-          <p className="text-xs font-semibold text-[#2e554e]">Butuh bantuan cari barang?</p>
-          <p className="mt-1 text-[11px] leading-5 text-[#6b8d86]">Tanyakan lokasi dan stok dengan bahasa sehari-hari.</p>
-          <button type="button" onClick={() => setShowAi(true)} className="mt-3 text-[11px] font-bold text-[#168272]">
-            Coba Tanya Stok
-          </button>
-        </div>
-      </aside>
-
-      <main className="lg:ml-[260px]">
-        <header className="sticky top-0 z-20 flex h-[76px] items-center justify-between gap-3 border-b border-[#e6e9ed] bg-[#f7f8fa]/95 px-4 backdrop-blur sm:px-5 md:px-10">
-          <div className="flex min-w-0 items-center gap-3">
-            <button type="button" onClick={() => setSidebarOpen(true)} aria-label="Buka menu" className="lg:hidden">
-              <Menu size={21} />
-            </button>
-            <div className="min-w-0">
-              <p className="truncate text-[11px] text-[#89939d]">
-                <span className="sm:hidden">{todayShort}</span>
-                <span className="hidden sm:inline">{todayLabel}</span>
-              </p>
-              <h1 className="mt-0.5 truncate text-[20px] font-bold tracking-tight">{titles[active]}</h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
+              placeholder="Cari barang, SKU, lokasi..."
               aria-label="Cari barang"
-              onClick={() => {
-                setActive("barang");
-                setMobileSearch(true);
-              }}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e2e6e9] bg-white text-[#66717b] md:hidden"
+            />
+            <kbd aria-hidden="true">⌘K</kbd>
+            <button
+              type="button"
+              className="wd-ask-ai"
+              onClick={() => setShowAi(true)}
+              aria-label="Buka Tanya Stok"
+              title="Tanya Stok"
             >
-              <Search size={17} />
+              <span className="wd-orb" aria-hidden="true" />
             </button>
+          </div>
 
-            <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98a2aa]" size={17} />
-              <input
-                ref={searchRef}
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  if (event.target.value && active !== "barang") setActive("barang");
-                }}
-                placeholder="Cari barang, SKU, lokasi..."
-                aria-label="Cari barang"
-                className="h-10 w-[240px] rounded-xl border border-[#e2e6e9] bg-white pl-10 pr-4 text-xs outline-none transition focus:border-[#65b5a8] focus:ring-4 focus:ring-[#dff2ee] lg:w-[280px]"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded border border-[#e2e6e9] px-1.5 py-0.5 text-[9px] text-[#9aa3aa]">⌘K</span>
-            </div>
+          <div className="wd-actions">
+            <button
+              type="button"
+              className="wd-icon-btn"
+              onClick={toggleTheme}
+              aria-label={theme === "light" ? "Aktifkan tema gelap" : "Aktifkan tema terang"}
+              title={theme === "light" ? "Tema gelap" : "Tema terang"}
+            >
+              {theme === "light" ? <Moon /> : <Sun />}
+            </button>
 
             <div className="relative">
               <button
                 type="button"
+                className="wd-icon-btn"
                 aria-label="Notifikasi"
                 aria-expanded={notifOpen}
-                onClick={() => setNotifOpen((current) => !current)}
-                className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#e2e6e9] bg-white text-[#66717b]"
+                onClick={() => {
+                  setNotifOpen((current) => !current);
+                  setUserOpen(false);
+                }}
               >
-                <Bell size={17} />
-                {lowStockProducts.length > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#e77b67]" />}
+                <Bell />
+                {lowStockProducts.length > 0 && <span className="wd-notice-dot" />}
               </button>
               {notifOpen && (
                 <>
                   <button type="button" aria-label="Tutup notifikasi" onClick={() => setNotifOpen(false)} className="fixed inset-0 z-30 cursor-default" />
-                  <div className="absolute right-0 top-12 z-40 w-[280px] rounded-2xl border border-[#e2e6e9] bg-white p-4 shadow-xl">
-                    <div className="flex items-center justify-between">
+                  <div className="wd-pop right-0 top-[52px] w-[290px]">
+                    <div className="flex items-center justify-between px-2 py-1">
                       <p className="text-xs font-bold">Perlu perhatian</p>
                       <span className="text-[10px] text-[#8b959d]">{lowStockProducts.length} barang</span>
                     </div>
                     {lowStockProducts.length === 0 ? (
-                      <p className="mt-3 rounded-lg bg-[#f4fbf9] p-3 text-[11px] text-[#2b806f]">Semua stok aman.</p>
+                      <p className="mt-2 rounded-lg bg-[#f4fbf9] p-3 text-[11px] text-[#2b806f]">Semua stok aman.</p>
                     ) : (
-                      <div className="mt-3 space-y-2">
-                        {lowStockProducts.slice(0, 4).map((product) => (
+                      <div className="mt-2 space-y-1">
+                        {lowStockProducts.slice(0, 5).map((product) => (
                           <button
                             key={product.id}
                             type="button"
                             onClick={() => {
+                              setQuery(product.name);
                               setActive("barang");
                               setNotifOpen(false);
                             }}
-                            className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[#f7f9fa]"
+                            className="wd-menu-item justify-between"
                           >
-                            <span className="min-w-0 truncate text-[11px]">{product.name}</span>
+                            <span className="min-w-0 truncate">{product.name}</span>
                             <span className={`shrink-0 text-[9px] font-bold ${product.status === "Habis" ? "text-[#d97163]" : "text-[#c5892b]"}`}>
                               {product.status}
                             </span>
@@ -557,7 +510,7 @@ export default function Home() {
                         setActive("barang");
                         setNotifOpen(false);
                       }}
-                      className="mt-3 w-full rounded-lg border border-[#eef0f2] py-2 text-[10px] font-semibold text-[#69757e] hover:bg-[#f8fafb]"
+                      className="mt-2 w-full rounded-lg border border-[#eef0f2] py-2 text-[10px] font-semibold text-[#69757e] hover:bg-[#f8fafb]"
                     >
                       Lihat semua barang
                     </button>
@@ -566,67 +519,149 @@ export default function Home() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 border-l border-[#e2e6e9] pl-2 sm:pl-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f0d7bd] text-xs font-bold text-[#8a5e3b]">
-                {initials(displayName)}
-              </div>
-              <div className="hidden sm:block">
-                <p className="max-w-[120px] truncate text-xs font-semibold">{displayName}</p>
-                <p className="text-[10px] text-[#8e979f]">{branchLabel}</p>
-              </div>
-              <ChevronDown size={14} className="hidden text-[#9ba4ac] sm:block" />
+            <div className="relative">
               <button
                 type="button"
-                onClick={logout}
-                aria-label="Keluar dari akun"
-                title="Keluar"
-                className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl border border-[#e2e6e9] bg-white text-[#66717b] transition hover:border-[#f0c5bf] hover:bg-[#fff5f3] hover:text-[#c96c5e]"
+                className="wd-avatar"
+                aria-label="Menu akun"
+                aria-expanded={userOpen}
+                onClick={() => {
+                  setUserOpen((current) => !current);
+                  setNotifOpen(false);
+                }}
               >
-                <LogOut size={16} />
+                <i aria-hidden="true">{initials(displayName)}</i>
+                <div className="hidden text-left sm:block">
+                  <span>{displayName}</span>
+                  <small>{roleLabel}</small>
+                </div>
+                <ChevronDown size={14} className="hidden text-[#9ba4ac] sm:block" />
               </button>
+              {userOpen && (
+                <>
+                  <button type="button" aria-label="Tutup menu akun" onClick={() => setUserOpen(false)} className="fixed inset-0 z-30 cursor-default" />
+                  <div className="wd-pop right-0 top-[52px] w-[250px]">
+                    <div className="px-3 py-2">
+                      <p className="truncate text-xs font-bold">{displayName}</p>
+                      <p className="mt-0.5 truncate text-[10px] text-[#8b959d]">{account?.email}</p>
+                    </div>
+                    <div className="my-1 h-px bg-[#eef0f2]" />
+                    <button type="button" className="wd-menu-item" onClick={() => navigate("pengaturan")}>
+                      <Settings /> Pengaturan akun
+                    </button>
+                    <button type="button" className="wd-menu-item" onClick={() => navigate("bantuan")}>
+                      <CircleHelp /> Bantuan
+                    </button>
+                    <button type="button" className="wd-menu-item" data-danger="true" onClick={logout}>
+                      <LogOut /> Keluar
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
 
-        {mobileSearch && (
-          <div className="border-b border-[#e6e9ed] bg-white px-4 py-3 md:hidden">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98a2aa]" size={16} />
-              <input
-                autoFocus
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Cari barang, SKU, lokasi..."
-                aria-label="Cari barang"
-                className="h-10 w-full rounded-xl border border-[#e2e6e9] bg-white pl-9 pr-10 text-xs outline-none focus:border-[#65b5a8]"
-              />
+        <div className="wd-stage-wrap">
+          <nav className="wd-dock hidden lg:flex" aria-label="Navigasi utama">
+            {mainNav.map((item) => (
+              <DockButton key={item.key} page={item.key} label={item.label} icon={item.icon} />
+            ))}
+            <span className="wd-dock-sep" aria-hidden="true" />
+            {otherNav.map((item) => (
+              <DockButton key={item.key} page={item.key} label={item.label} icon={item.icon} />
+            ))}
+          </nav>
+
+          <main className="wd-stage">
+            <div className="wd-stage-inner">
+              {loadError && (
+                <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-[#f0d6d1] bg-[#fff8f6] px-4 py-3 text-xs text-[#a45b4f]">
+                  <span>{loadError}</span>
+                  <button type="button" onClick={() => void loadData()} className="shrink-0 font-semibold underline">
+                    Muat ulang
+                  </button>
+                </div>
+              )}
+              <div key={active} className="wd-rise">
+                {renderView()}
+              </div>
+            </div>
+          </main>
+        </div>
+
+        <footer className="wd-footer">
+          <span>{todayShort || "Wareflow"} · {titles[active]}</span>
+          <a href="https://unsplash.com/photos/e0oJLc5FYsg" target="_blank" rel="noreferrer">
+            Foto: GoodLifeConstruction / Unsplash
+          </a>
+        </footer>
+      </div>
+
+      <nav className="wd-dock flex lg:hidden" aria-label="Navigasi utama">
+        {mobileDock.map((key) => {
+          const item = [...mainNav, ...otherNav].find((entry) => entry.key === key)!;
+          return <DockButton key={key} page={key} label={item.short} icon={item.icon} />;
+        })}
+        <button type="button" onClick={() => setMobileMenu(true)} aria-label="Semua menu" aria-expanded={mobileMenu}>
+          <Menu />
+          <span className="wd-dock-label">Menu</span>
+        </button>
+      </nav>
+
+      {mobileMenu && (
+        <div className="fixed inset-0 z-50 flex items-end bg-[#16252b]/35 backdrop-blur-sm lg:hidden">
+          <button type="button" aria-label="Tutup menu" onClick={() => setMobileMenu(false)} className="absolute inset-0 cursor-default" />
+          <div className="relative w-full wd-sheet rounded-t-[26px] border border-[#e6e9ed] p-5 pb-8">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold">Menu</p>
+                <p className="mt-0.5 text-[11px] text-[#8b959d]">{displayName} · {roleLabel}</p>
+              </div>
+              <button type="button" aria-label="Tutup" onClick={() => setMobileMenu(false)} className="rounded-full border border-[#e1e6e8] p-2">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[...mainNav, ...otherNav].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => navigate(item.key)}
+                    className={`flex flex-col items-start gap-2 rounded-xl border p-3 text-left text-[11px] font-semibold ${
+                      active === item.key ? "border-[#cfe0db] bg-[#f8fafb]" : "border-[#e6e9ed] bg-[#f8fafb]"
+                    }`}
+                  >
+                    <Icon size={17} />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
               <button
                 type="button"
-                aria-label="Tutup pencarian"
                 onClick={() => {
-                  setMobileSearch(false);
-                  setQuery("");
+                  setShowAi(true);
+                  setMobileMenu(false);
                 }}
-                className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#8e989f] hover:bg-[#f4f6f7]"
+                className="flex items-center justify-center gap-2 rounded-xl border border-[#e1e6e8] bg-[#f8fafb] py-3 text-[11px] font-semibold"
               >
-                <X size={15} />
+                <Sparkles size={15} /> Tanya Stok
+              </button>
+              <button
+                type="button"
+                onClick={logout}
+                className="flex items-center justify-center gap-2 rounded-xl border border-[#f0d6d1] bg-[#f8fafb] py-3 text-[11px] font-semibold text-[#c96c5e]"
+              >
+                <LogOut size={15} /> Keluar
               </button>
             </div>
           </div>
-        )}
-
-        <div className="dashboard-enter px-5 py-7 md:px-10 md:py-9">
-          {loadError && (
-            <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-[#f0d6d1] bg-[#fff8f6] px-4 py-3 text-xs text-[#a45b4f]">
-              <span>{loadError}</span>
-              <button type="button" onClick={() => void loadData()} className="shrink-0 font-semibold underline">
-                Muat ulang
-              </button>
-            </div>
-          )}
-          {renderView()}
         </div>
-      </main>
+      )}
 
       {showAdd && (
         <AddProductModal
@@ -664,21 +699,20 @@ export default function Home() {
 function DashboardSkeleton() {
   return (
     <div className="animate-pulse space-y-5">
-      <div className="h-8 w-64 rounded-lg bg-[#e9edf0]" />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="h-8 w-64 rounded-xl bg-[#e9edf0]" />
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {[0, 1, 2, 3].map((index) => (
-          <div key={index} className="h-32 rounded-2xl border border-[#e6e9ed] bg-white p-5">
+          <div key={index} className="h-28 rounded-2xl border border-[#e6e9ed] bg-white p-4">
             <div className="h-9 w-9 rounded-xl bg-[#eef1f3]" />
-            <div className="mt-4 h-3 w-24 rounded bg-[#eef1f3]" />
-            <div className="mt-2 h-6 w-32 rounded bg-[#e9edf0]" />
+            <div className="mt-3 h-3 w-24 rounded bg-[#eef1f3]" />
+            <div className="mt-2 h-6 w-28 rounded bg-[#e9edf0]" />
           </div>
         ))}
       </div>
       <div className="grid gap-5 xl:grid-cols-[1.55fr_1fr]">
-        <div className="h-72 rounded-2xl border border-[#e6e9ed] bg-white" />
-        <div className="h-72 rounded-2xl border border-[#e6e9ed] bg-white" />
+        <div className="h-64 rounded-2xl border border-[#e6e9ed] bg-white" />
+        <div className="h-64 rounded-2xl border border-[#e6e9ed] bg-white" />
       </div>
-      <div className="h-64 rounded-2xl border border-[#e6e9ed] bg-white" />
     </div>
   );
 }

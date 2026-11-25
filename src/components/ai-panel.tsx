@@ -90,9 +90,9 @@ export function AiPanel({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[#16252b]/25 backdrop-blur-[2px]">
+    <div className="wd-overlay fixed inset-0 z-50 flex justify-end backdrop-blur-[2px]">
       <button type="button" aria-label="Tutup Tanya Stok" onClick={onClose} className="flex-1 cursor-default" />
-      <div role="dialog" aria-modal="true" aria-label="Tanya Stok" className="flex h-full w-full max-w-[440px] flex-col bg-white shadow-2xl">
+      <div role="dialog" aria-modal="true" aria-label="Tanya Stok" className="flex h-full w-full max-w-[440px] flex-col wd-sheet border-l border-[#e6e9ed] shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#e8ebed] px-5 py-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e4f5f1] text-[#208a7b]">

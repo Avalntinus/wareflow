@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 export function Toast({
@@ -56,10 +57,10 @@ export function Modal({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#16252b]/30 p-4 backdrop-blur-sm sm:items-center">
+  const dialog = (
+    <div className="wd-overlay fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 backdrop-blur-sm sm:items-center">
       <button type="button" aria-label="Tutup dialog" onClick={onClose} className="absolute inset-0 cursor-default" />
-      <div role="dialog" aria-modal="true" aria-label={title} className={`relative my-auto w-full ${width} rounded-2xl bg-white p-6 shadow-2xl`}>
+      <div role="dialog" aria-modal="true" aria-label={title} className={`relative my-auto w-full ${width} rounded-2xl border border-[#e6e9ed] bg-white p-6 shadow-2xl`}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold">{title}</h2>
@@ -73,6 +74,10 @@ export function Modal({
       </div>
     </div>
   );
+
+  // Portal keeps the dialog above the page even when it is opened from a
+  // transformed container (e.g. a view with an entrance animation).
+  return typeof document === "undefined" ? dialog : createPortal(dialog, document.body);
 }
 
 export function EmptyState({
@@ -121,10 +126,10 @@ export function PageHeading({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+    <div className="wd-view-head">
       <div>
-        <p className="text-sm text-[#7e8993]">{eyebrow}</p>
-        <h2 className="mt-1 text-[25px] font-bold tracking-tight">{title}</h2>
+        <p>{eyebrow}</p>
+        <h1>{title}</h1>
       </div>
       {action}
     </div>

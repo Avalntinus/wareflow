@@ -119,7 +119,7 @@ export function StockCountView({
             />
           ) : (
             <div>
-              <div className="hidden border-b border-[#edf0f2] pb-3 text-[10px] uppercase tracking-[0.1em] text-[#9aa3aa] sm:grid sm:grid-cols-[1fr_120px_140px_80px] sm:gap-3">
+              <div className="hidden rounded-lg bg-[#f8fafb] px-3 py-2 text-[10px] uppercase tracking-[0.1em] text-[#9aa3aa] sm:grid sm:grid-cols-[1fr_120px_140px_80px] sm:gap-3">
                 <span className="font-semibold">Barang</span>
                 <span className="text-right font-semibold">Stok sistem</span>
                 <span className="text-right font-semibold">Jumlah fisik</span>
