@@ -592,8 +592,12 @@ export default function Home() {
 
         <footer className="wd-footer">
           <span>{todayShort || "Wareflow"} · {titles[active]}</span>
-          <a href="https://unsplash.com/photos/e0oJLc5FYsg" target="_blank" rel="noreferrer">
-            Foto: GoodLifeConstruction / Unsplash
+          <a
+            href="https://commons.wikimedia.org/wiki/File:Warehouse_interior_showcasing_organized_shelving_and_packages.jpg"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Foto: Shixart1985 / Wikimedia · CC BY 2.0
           </a>
         </footer>
       </div>

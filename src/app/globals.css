@@ -18,10 +18,10 @@
   --wd-edge-light: rgb(255 254 247 / 86%);
   --wd-edge-shade: rgb(57 40 28 / 16%);
   --wd-gloss: rgb(255 251 242 / 44%);
-  --wd-frame: rgb(247 234 219 / 54%);
+  --wd-frame: rgb(247 234 219 / 80%);
   --wd-rail: rgb(241 222 206 / 66%);
-  --wd-card: rgb(250 242 232 / 89%);
-  --wd-card-light: rgb(255 251 245 / 62%);
+  --wd-card: rgb(250 242 232 / 95%);
+  --wd-card-light: rgb(255 251 245 / 70%);
   --wd-raised: rgb(255 249 243 / 86%);
   --wd-inner: rgb(255 250 245 / 46%);
   --wd-surface: #f6ece2;
@@ -49,9 +49,9 @@
   --wd-edge-light: rgb(255 242 225 / 50%);
   --wd-edge-shade: rgb(11 6 5 / 32%);
   --wd-gloss: rgb(255 237 213 / 13%);
-  --wd-frame: rgb(42 31 29 / 70%);
+  --wd-frame: rgb(42 31 29 / 88%);
   --wd-rail: rgb(45 32 30 / 76%);
-  --wd-card: rgb(47 36 34 / 90%);
+  --wd-card: rgb(47 36 34 / 96%);
   --wd-card-light: rgb(106 88 81 / 40%);
   --wd-raised: rgb(80 67 61 / 84%);
   --wd-inner: rgb(78 61 56 / 52%);
@@ -113,22 +113,25 @@ svg { flex: none; }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 60%;
-  filter: sepia(.22) saturate(.78) brightness(.86);
+  object-position: center 45%;
+  transform: scale(1.04);
+  filter: blur(2.5px) sepia(.26) saturate(.72) brightness(.62) contrast(1.03);
 }
-:root[data-theme="dark"] .wd-backdrop img { filter: sepia(.15) saturate(.75) brightness(.61); }
+:root[data-theme="dark"] .wd-backdrop img { filter: blur(2.5px) sepia(.2) saturate(.65) brightness(.4) contrast(1.05); }
 .wd-backdrop::after {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(116deg, rgb(73 48 37 / 35%), transparent 43%, rgb(162 101 63 / 24%) 76%, transparent 100%),
-    linear-gradient(0deg, rgb(53 33 25 / 34%), transparent 58%);
+    radial-gradient(ellipse at 18% 12%, rgb(196 132 82 / 26%), transparent 58%),
+    linear-gradient(118deg, rgb(26 16 11 / 58%), transparent 42%, rgb(22 13 9 / 46%) 100%),
+    linear-gradient(0deg, rgb(18 11 8 / 62%), transparent 62%);
 }
 :root[data-theme="dark"] .wd-backdrop::after {
   background:
-    linear-gradient(116deg, rgb(20 13 10 / 55%), transparent 45%, rgb(88 52 33 / 30%) 78%, transparent 100%),
-    linear-gradient(0deg, rgb(12 8 6 / 55%), transparent 60%);
+    radial-gradient(ellipse at 18% 12%, rgb(150 96 58 / 20%), transparent 55%),
+    linear-gradient(118deg, rgb(12 7 5 / 62%), transparent 40%, rgb(10 6 4 / 55%) 100%),
+    linear-gradient(0deg, rgb(8 5 3 / 70%), transparent 60%);
 }
 
 /* Kerangka ------------------------------------------------------- */
@@ -412,10 +415,10 @@ svg { flex: none; }
   backdrop-filter: blur(20px) saturate(1.2);
   -webkit-backdrop-filter: blur(20px) saturate(1.2);
 }
-.wd-stage-inner { padding: clamp(18px, 2.1vw, 33px) clamp(16px, 2.9vw, 42px) 36px; }
+.wd-stage-inner { padding: clamp(18px, 2.1vw, 33px) clamp(16px, 2.9vw, 42px) 40px; }
 
 @media (min-width: 1024px) {
-  .wd-stage { min-block-size: max(560px, calc(100svh - 140px)); }
+  .wd-stage { min-block-size: max(560px, calc(100svh - 156px)); }
 }
 
 .wd-view-head {
