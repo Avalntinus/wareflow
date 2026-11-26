@@ -95,8 +95,8 @@ export function ImportView({
         <label className="mt-8 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#cfe6e1] bg-[#f5fbfa] px-6 py-12 text-center hover:bg-[#eef9f6]">
           <Upload className="text-[#2b9c8b]" size={28} />
           <p className="mt-4 text-sm font-bold">Pilih file Excel atau CSV</p>
-          <p className="mt-2 text-[11px] text-[#8c999e]">Maksimal 5 MB · .xlsx, .xls, .csv</p>
-          <input key={inputKey} type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="hidden" />
+          <p className="mt-2 text-[11px] text-[#8c999e]">Maksimal 5 MB · .xlsx, .csv</p>
+          <input key={inputKey} type="file" accept=".xlsx,.csv" onChange={handleFile} className="hidden" />
         </label>
 
         {fileName && (

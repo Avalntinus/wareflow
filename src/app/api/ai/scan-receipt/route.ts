@@ -14,6 +14,10 @@ export async function POST(request: Request) {
     const file = form.get("file");
     if (!(file instanceof File)) return NextResponse.json({ error: "Foto atau PDF nota wajib dipilih." }, { status: 400 });
     if (file.size > 1_500_000) return NextResponse.json({ error: "Ukuran nota maksimal 1,5 MB. Kompres foto sebelum mengirim." }, { status: 400 });
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf"];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ error: "Format nota harus JPG, PNG, WEBP, atau PDF." }, { status: 400 });
+    }
     const apiKey = process.env.GEMINI_API_KEY;
     const model = process.env.GEMINI_MODEL;
     if (!apiKey || !model) return NextResponse.json({ error: "AI belum dikonfigurasi. Gunakan input pembelian manual.", fallback: true }, { status: 503 });

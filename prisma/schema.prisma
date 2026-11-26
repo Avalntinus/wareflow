@@ -235,3 +235,12 @@ model AiUsageLog {
   createdAt    DateTime @default(now())
   workspace Workspace? @relation(fields: [workspaceId], references: [id])
 }
+
+model RateLimit {
+  key       String   @id
+  count     Int      @default(0)
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+}

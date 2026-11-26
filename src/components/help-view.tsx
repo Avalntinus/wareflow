@@ -112,7 +112,7 @@ export function HelpView({ onNavigate }: { onNavigate: (page: PageKey) => void }
               <FileSpreadsheet size={17} className="text-[#20897b]" /> Format import
             </div>
             <p className="mt-2 text-[11px] leading-5 text-[#69757e]">
-              File CSV/Excel dengan kolom berikut:
+              File CSV atau Excel (.xlsx) dengan kolom berikut:
             </p>
             <code className="mt-3 block overflow-x-auto rounded-lg bg-[#f6f8f9] p-3 text-[10px] leading-5 text-[#4d5962]">
               nama;sku;kategori;satuan;jumlah;harga_modal;lokasi_kode;stok_minimum

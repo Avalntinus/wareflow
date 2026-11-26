@@ -125,6 +125,9 @@ export default function Home() {
         fetch("/api/account"),
       ]);
       if (responses.some((response) => response.status === 401)) {
+        // Cookie bisa kedaluwarsa/dicabut: bersihkan dulu agar proxy tidak
+        // memantulkan /login kembali ke / tanpa akhir.
+        await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
         router.replace("/login");
         return;
       }

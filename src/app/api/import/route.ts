@@ -1,10 +1,37 @@
 import { NextResponse } from "next/server";
-import * as XLSX from "xlsx";
+import Papa from "papaparse";
+import readXlsxFile from "read-excel-file/node";
 import { getCurrentWorkspace } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 function parseNumber(value: unknown) {
   return Number(String(value ?? "0").replace(/\./g, "").replace(",", "."));
+}
+
+type ImportRow = Record<string, unknown>;
+
+/** Samakan bentuk CSV (objek per baris) dan XLSX (matriks) jadi objek berheader. */
+function rowsFromMatrix(matrix: unknown[][]): ImportRow[] {
+  if (!matrix.length) return [];
+  const headers = (matrix[0] ?? []).map((header) => String(header ?? "").trim());
+  return matrix.slice(1).map((cells) => {
+    const row: ImportRow = {};
+    headers.forEach((header, index) => {
+      if (header) row[header] = cells[index] ?? "";
+    });
+    return row;
+  });
+}
+
+function rowsFromCsv(buffer: Buffer): ImportRow[] {
+  const text = buffer.toString("utf8").replace(/^\uFEFF/, "");
+  const parsed = Papa.parse<ImportRow>(text, { header: true, skipEmptyLines: "greedy" });
+  if (!parsed.data.length && parsed.errors.length) {
+    throw new Error(`CSV tidak terbaca: ${parsed.errors[0]?.message ?? "format tidak dikenal"}.`);
+  }
+  return parsed.data.map((row) =>
+    Object.fromEntries(Object.entries(row).map(([key, value]) => [String(key ?? "").trim(), value])),
+  );
 }
 
 export async function POST(request: Request) {
@@ -14,9 +41,25 @@ export async function POST(request: Request) {
   const file = form.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "File wajib dipilih." }, { status: 400 });
   if (file.size > 5 * 1024 * 1024) return NextResponse.json({ error: "Ukuran file maksimal 5 MB." }, { status: 400 });
+  const filename = file.name.toLowerCase();
+  const isCsv = filename.endsWith(".csv");
+  const isXlsx = filename.endsWith(".xlsx");
+  if (!isCsv && !isXlsx) {
+    return NextResponse.json({ error: "Format file harus .csv atau .xlsx." }, { status: 400 });
+  }
+
   const buffer = Buffer.from(await file.arrayBuffer());
-  const workbook = XLSX.read(buffer, { type: "buffer" });
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+  let rows: ImportRow[];
+  try {
+    if (isCsv) {
+      rows = rowsFromCsv(buffer);
+    } else {
+      const sheets = await readXlsxFile(buffer);
+      rows = rowsFromMatrix((sheets[0]?.data ?? []) as unknown[][]);
+    }
+  } catch {
+    return NextResponse.json({ error: "File tidak bisa dibaca. Periksa format kolom dan isi file." }, { status: 400 });
+  }
   if (rows.length > 2000) return NextResponse.json({ error: "Maksimal 2.000 baris." }, { status: 400 });
   const errors: { row: number; reason: string }[] = [];
   let successRows = 0;

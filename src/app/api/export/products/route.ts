@@ -32,7 +32,17 @@ export async function GET() {
     ]);
   }
 
-  const csv = rows.map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(",")).join("\n");
+  // Cegah CSV/Excel formula injection dari nama barang atau SKU yang diawali = + - @.
+  const csv = rows
+    .map((row) =>
+      row
+        .map((cell) => {
+          const text = /^[=+\-@\t\r]/.test(cell) ? `'${cell}` : cell;
+          return `"${text.replaceAll('"', '""')}"`;
+        })
+        .join(","),
+    )
+    .join("\n");
   return new NextResponse(`\ufeff${csv}`, {
     headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="wareflow-barang.csv"' },
   });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { createSession, hashOtp } from "@/lib/auth";
+import { consumeRateLimit, requestIp, tooManyRequests } from "@/lib/rate-limit";
 
 const schema = z.object({
   email: z.string().trim().email(),
@@ -12,9 +13,19 @@ const schema = z.object({
 export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Kode OTP harus 6 angka." }, { status: 400 });
+
+  const ip = requestIp(request);
   const email = parsed.data.email.toLowerCase();
+  const [ipLimit, emailLimit] = await Promise.all([
+    consumeRateLimit(`otp-verify:ip:${ip}`, 30, 10 * 60),
+    consumeRateLimit(`otp-verify:email:${email.slice(0, 190)}`, 10, 10 * 60),
+  ]);
+  if (!ipLimit.allowed) return tooManyRequests(ipLimit.retryAfter);
+  if (!emailLimit.allowed) return tooManyRequests(emailLimit.retryAfter, "Percobaan verifikasi terlalu banyak. Tunggu beberapa menit.");
+
   const user = await db.user.findUnique({ where: { email } });
-  if (!user) return NextResponse.json({ error: "Akun tidak ditemukan." }, { status: 404 });
+  // Pesan seragam: jangan bocorkan apakah email terdaftar.
+  if (!user) return NextResponse.json({ error: "Kode OTP salah atau sudah kedaluwarsa." }, { status: 400 });
   const otp = await db.otpCode.findFirst({
     where: { userId: user.id, purpose: parsed.data.purpose, usedAt: null },
     orderBy: { createdAt: "desc" },

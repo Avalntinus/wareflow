@@ -18,11 +18,15 @@ const DEFAULT_LOCATIONS = [
 
 export async function createOwnerIfMissing() {
   const email = process.env.OWNER_EMAIL ?? "owner@wareflow.local";
-  const password = process.env.OWNER_PASSWORD ?? "wareflow-demo";
+  const password = process.env.OWNER_PASSWORD;
+  if (!password && process.env.NODE_ENV === "production") {
+    throw new Error("OWNER_PASSWORD wajib diatur di production; akun owner tidak dibuat.");
+  }
+  const ownerPassword = password ?? "wareflow-demo";
   const existing = await db.user.findUnique({ where: { email } });
   if (!existing) {
     const owner = await db.user.create({
-      data: { email, name: "Pemilik", passwordHash: await hash(password, 12), emailVerifiedAt: new Date(), role: "OWNER" },
+      data: { email, name: "Pemilik", passwordHash: await hash(ownerPassword, 12), emailVerifiedAt: new Date(), role: "OWNER" },
     });
     await ensureWorkspaceForUser(owner);
   } else {
